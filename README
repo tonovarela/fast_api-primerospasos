@@ -1,0 +1,65 @@
+# Mini blog con FastAPI
+
+Proyecto de ejemplo usando **FastAPI** para crear una API sencilla de posts en un mini blog.
+
+## Requisitos
+
+- Python 3.10+
+- `pip`
+
+## Crear y activar entorno virtual
+
+Desde la carpeta del proyecto:
+
+```bash
+cd "fast_api-primerospasos"
+
+python3 -m venv .venv
+source .venv/bin/activate  # macOS / Linux
+```
+
+Para desactivar el entorno:
+
+```bash
+deactivate
+```
+
+## Instalar dependencias
+
+Con el entorno virtual activo:
+
+```bash
+pip install fastapi "uvicorn[standard]"
+```
+
+Opcionalmente, guardar las dependencias:
+
+```bash
+pip freeze > requirements.txt
+```
+
+## Ejecutar la aplicación
+
+Desde la raíz del proyecto, con el entorno activado:
+
+```bash
+uvicorn main:app --reload
+```
+
+La API estará disponible en:
+
+- Documentación interactiva: http://127.0.0.1:8000/docs
+- Documentación alternativa: http://127.0.0.1:8000/redoc
+
+## Endpoints principales
+
+- `GET /`  
+  Devuelve un mensaje de bienvenida.
+
+- `GET /posts`  
+  Lista todos los posts.  
+  Parámetros:
+  - `query` (opcional, string): filtra por título.
+
+- `GET /posts/{post_id}`  
+  Devuelve un post por su `id`.
