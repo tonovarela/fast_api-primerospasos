@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query,Body,HTTPException
 
-app = FastAPI(title="Mini blog")
+app = FastAPI(title="Blog")
 BLOG_POST =[
     {"id":1,"title":"Hola desde FastAPI","content":"Mi primer post con FastAPI"},
     {"id":2,"title":"Segundo post","content":"Mi primer post con FastAPI1"},
