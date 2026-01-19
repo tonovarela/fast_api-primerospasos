@@ -1,6 +1,6 @@
-from typing import List, Union
+from typing import List, Union,Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query,Path
 
 from dto.post_dto import PostCreate, PostUpdate
 from response.response import (
@@ -21,7 +21,15 @@ BLOG_POST = [
 
 
 @router.get("/", response_model=List[PostResponse])
-def get_posts(query: str = Query(default=None, description="Search query string")):
+def get_posts(query: Optional[str] = Query(
+    default=None, 
+    description="Search query string",
+    alias="search",
+    min_length=3,
+    max_length=50,
+    pattern="^[^\W\d_]+$"
+    
+    )):
     if query:
         results = (
             post for post in BLOG_POST if query.lower() in post["title"].lower()
@@ -36,7 +44,13 @@ def get_posts(query: str = Query(default=None, description="Search query string"
     response_description="Post encontrado",
 )
 def get_post(
-    post_id: int,
+    post_id: int =Path(
+        ...,
+        title="ID del post",
+        description="El ID del post que quieres obtener",
+        ge=1,
+        example=1,
+        ),
     include_content: bool = Query(default=False, description="With content"),
 ):
     post_found = next((post for post in BLOG_POST if post["id"] == post_id), None)
