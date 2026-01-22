@@ -1,4 +1,4 @@
-from typing import List, Union,Optional
+from typing import List, Union,Optional,Literal
 
 from fastapi import APIRouter, HTTPException, Query,Path
 
@@ -17,6 +17,13 @@ BLOG_POST = [
     {"id": 2, "title": "Segundo post", "content": "Mi primer post con FastAPI1"},
     {"id": 3, "title": "Tercer post", "content": "Mi primer post con FastAPI2"},
     {"id": 4, "title": "Cuarto post", "content": "Mi primer post con FastAPI3"},
+    {"id": 5, "title": "Quinto post", "content": "Mi primer post con FastAPI4"},
+    {"id": 6, "title": "Sexto post", "content": "Mi primer post con FastAPI5"},
+    {"id": 7, "title": "Septimo post", "content": "Mi primer post con FastAPI6"},
+    {"id": 8, "title": "Octavo post", "content": "Mi primer post con FastAPI7"},
+    {"id": 9, "title": "Noveno post", "content": "Mi primer post con FastAPI8"},
+    {"id": 10, "title": "Decimo post", "content": "Mi primer post con FastAPI9"},
+    
 ]
 
 
@@ -28,14 +35,30 @@ def get_posts(query: Optional[str] = Query(
     min_length=3,
     max_length=50,
     pattern="^[^\W\d_]+$"
+    ),
+    order_by:Literal["id","title"]=Query(
+        default="id",
+        description="Field to order the posts by",
+    ),  
+    direction:Literal["asc","desc"]=Query(
+        default="asc",
+        description="Order direction",
+    ),        
+    offset:int = Query(default=0, description="Number of posts to skip",ge=0),            
+    limit:int = Query(default=10, description="Limit the number of posts returned",ge=1,le=50),):
     
-    )):
+    results = BLOG_POST
     if query:
-        results = (
-            post for post in BLOG_POST if query.lower() in post["title"].lower()
+        results = [
+            post for post in results if query.lower() in post["title"].lower()
+        ]
+    results = sorted(
+            results,
+            key=lambda x: x[order_by],
+            reverse=(direction == "desc")
         )
-        return list(results)
-    return BLOG_POST
+    return results[offset: offset + limit]
+
 
 
 @router.get(
@@ -49,7 +72,7 @@ def get_post(
         title="ID del post",
         description="El ID del post que quieres obtener",
         ge=1,
-        example=1,
+       # example=1,
         ),
     include_content: bool = Query(default=False, description="With content"),
 ):
