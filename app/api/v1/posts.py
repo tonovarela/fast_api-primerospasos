@@ -1,21 +1,31 @@
-from typing import List, Union,Optional,Literal
+from typing import  List, Union,Optional,Literal
 
 from fastapi import APIRouter, HTTPException, Query,Path
 
+from math import ceil
 from dto.post_dto import PostCreate, PostUpdate
 from response.response import (
     PostCreateResponse,
     PostUpdateResponse,
-    PostSummaryResponse,
+    PostSummaryResponse,    
     PostResponse,
+    PaginatedPost
 )
 
-router = APIRouter(prefix="/posts", tags=["posts"])
+router = APIRouter(prefix="/posts")
 
 BLOG_POST = [
-    {"id": 1, "title": "Hola desde FastAPI", "content": "Mi primer post con FastAPI"},
-    {"id": 2, "title": "Segundo post", "content": "Mi primer post con FastAPI1"},
-    {"id": 3, "title": "Tercer post", "content": "Mi primer post con FastAPI2"},
+    {"id": 1, 
+     "title": "Hola desde FastAPI", 
+     "content": "Mi primer post con FastAPI",
+     "tags":[{"name":"FastAPI"},{"name":"Python"},{"name":"C#"},{"name":"PHP"}]
+     },
+    {"id": 2,
+     "title": "Segundo post",
+     "content": "Mi primer post con FastAPI1",
+     "tags":[{"name":"FastAPI"},{"name":"C++"},{"name":"C#"},{"name":"Flask"}]
+     },
+    {"id": 3, "title": "Tercer post", "content": "Mi primer post con FastAPI2" },
     {"id": 4, "title": "Cuarto post", "content": "Mi primer post con FastAPI3"},
     {"id": 5, "title": "Quinto post", "content": "Mi primer post con FastAPI4"},
     {"id": 6, "title": "Sexto post", "content": "Mi primer post con FastAPI5"},
@@ -27,14 +37,20 @@ BLOG_POST = [
 ]
 
 
-@router.get("/", response_model=List[PostResponse])
-def get_posts(query: Optional[str] = Query(
-    default=None, 
+@router.get("/",response_model=PaginatedPost)
+def get_posts(
+    text: Optional[str] = Query(
+    default=None,
+    deprecated=True,
+    description="Parametro deprecado (usar query o search en su lugar)",    
+    ),
+    query: Optional[str] = Query(
+    default=None,
     description="Search query string",
     alias="search",
     min_length=3,
     max_length=50,
-    pattern="^[^\W\d_]+$"
+    pattern=r"^[^\W\d_]+(?: [^\W\d_]+)*$"
     ),
     order_by:Literal["id","title"]=Query(
         default="id",
@@ -44,22 +60,45 @@ def get_posts(query: Optional[str] = Query(
         default="asc",
         description="Order direction",
     ),        
-    offset:int = Query(default=0, description="Number of posts to skip",ge=0),            
-    limit:int = Query(default=10, description="Limit the number of posts returned",ge=1,le=50),):
-    
-    results = BLOG_POST
+    page:int = Query(default=1, description="Number of page",ge=1),            
+    per_page:int = Query(default=5,ge=1,le=50, description="Per page")
+    ):    
+    results = BLOG_POST    
+    # query = query or text
     if query:
-        results = [
-            post for post in results if query.lower() in post["title"].lower()
-        ]
-    results = sorted(
-            results,
-            key=lambda x: x[order_by],
-            reverse=(direction == "desc")
-        )
-    return results[offset: offset + limit]
+            results = [post for post in results if query.lower() in post["title"].lower()]
+    total = len(results)           
+    total_pages= ceil(total / per_page) if total >0 else 1
+    has_next = per_page + ( (page -1) * per_page) < total
+    has_prev = page > 1
+    results = sorted(results,key=lambda x: x[order_by],reverse=(direction == "desc"))    
+    start = (page - 1) * per_page
+    end = start + per_page
+    items = results[start:end]
+
+    return PaginatedPost(total=total,
+                         page= page,
+                         per_page = per_page,
+                         total_pages= total_pages,
+                         has_next= has_next,
+                         has_prev= has_prev,                         
+                         order_by=order_by,                         
+                         direction=direction,                        
+                         search=query,                                                  
+                         items=items                                                                                                                                                  
+                         )
 
 
+
+
+@router.get("/by-tags",response_model=List[PostResponse])
+def get_posts_by_tags(tags: List[str] = Query(...,min_length=1,description="List of tags to filter posts:Example: python,fastapi")):
+    tags_lower = [ tag.lower() for tag in tags ]
+    return [ 
+            post for post in BLOG_POST if any( tag["name"].lower() in tags_lower  for tag in post.get("tags",[]) ) 
+            ]
+    
+    
 
 @router.get(
     "/{post_id}",
@@ -88,6 +127,14 @@ def get_post(
             }
         return post_found
     raise HTTPException(status_code=404, detail="Post no encontrado")
+
+
+
+    
+    
+    
+    
+    
 
 
 @router.post("/", response_model=PostCreateResponse)
