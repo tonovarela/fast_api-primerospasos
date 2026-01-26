@@ -1,12 +1,13 @@
 
 import os
-from fastapi import FastAPI, Query, Body, HTTPException, Path
-from pydantic import BaseModel, Field, field_validator, EmailStr
+from datetime import datetime
+from fastapi import FastAPI, Query, Body, HTTPException, Path,status
+from pydantic import BaseModel, Field, field_validator, EmailStr,ConfigDict
 from typing import Optional, List, Union, Literal
 from math import ceil
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker,Session,DeclarativeBase
+from sqlalchemy import create_engine,Integer,String,Text,DateTime
+from sqlalchemy.orm import sessionmaker,Session,DeclarativeBase,Mapped,mapped_column
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./blog.db")
 
@@ -26,6 +27,18 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, clas
 class Base(DeclarativeBase):
     pass
 
+
+class PostORM(Base):
+    __tablename__ = "posts"
+    # Definición de columnas aquí
+    id:Mapped[int] = mapped_column(Integer,primary_key=True, autoincrement=True,index=True)
+    title:Mapped[str] = mapped_column(String(100), nullable=False,index=True)
+    content:Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at:Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at:Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+Base.metadata.drop_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 def get_db():
     db = SessionLocal()
     try:
@@ -84,6 +97,8 @@ BLOG_POST = [
 ]
 
 
+
+
 class Tag(BaseModel):
     name: str = Field(..., min_length=2, max_length=30,
                       description="Nombre de la etiqueta")
@@ -133,6 +148,7 @@ class PostUpdate(BaseModel):
 
 class PostPublic(PostBase):
     id: int
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostSummary(BaseModel):
@@ -263,7 +279,7 @@ def get_post(post_id: int = Path(
     return HTTPException(status_code=404, detail="Post no encontrado")
 
 
-@app.post("/posts", response_model=PostPublic, response_description="Post creado (OK)")
+@app.post("/posts", response_model=PostPublic, response_description="Post creado (OK)",status_code=status.HTTP_201_CREATED)
 def create_post(post: PostCreate):
     new_id = (BLOG_POST[-1]["id"]+1) if BLOG_POST else 1
     new_post = {"id": new_id,
