@@ -1,65 +1,103 @@
 # Mini blog con FastAPI
 
-Proyecto de ejemplo usando **FastAPI** para crear una API sencilla de posts en un mini blog.
+Proyecto de ejemplo con **FastAPI**, **SQLAlchemy** y soporte para **SQLite** (por defecto) o **PostgreSQL** (opcional).
 
 ## Requisitos
-
 - Python 3.10+
-- `pip`
+- pip
+- (Opcional) Docker y Docker Compose para PostgreSQL
 
-## Crear y activar entorno virtual
-
+## Configuración del entorno
 Desde la carpeta del proyecto:
 
 ```bash
-cd "fast_api-primerospasos"
-
 python3 -m venv .venv
-source venv/bin/activate  # macOS / Linux
+source .venv/bin/activate  # macOS / Linux
 ```
 
-Para desactivar el entorno:
-
+Instalar dependencias:
 ```bash
-deactivate
+pip install -r requirements.txt
 ```
 
-## Instalar dependencias
+## Variables de entorno
+Crea un archivo `.env` en la raíz con la cadena de conexión `DATABASE_URL`.
 
-Con el entorno virtual activo:
+Ejemplos:
+- SQLite (por defecto si no se define):
+  ```env
+  DATABASE_URL=sqlite:///./blog.db
+  ```
+- PostgreSQL (psycopg v3):
+  ```env
+  DATABASE_URL=postgresql+psycopg://dev:devpassword@localhost:5432/blogdb
+  ```
 
-```bash
-pip install fastapi "uvicorn[standard]"
+## (Opcional) PostgreSQL con Docker Compose
+Ejecuta una base de datos local de Postgres:
+
+```yaml
+# docker-compose.yml
+version: "3.9"
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=dev
+      - POSTGRES_PASSWORD=devpassword
+      - POSTGRES_DB=blogdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+volumes:
+  db_data:
 ```
 
-Opcionalmente, guardar las dependencias:
-
+Levantar el servicio:
 ```bash
-pip freeze > requirements.txt
+docker compose up -d
 ```
 
 ## Ejecutar la aplicación
-
-Desde la raíz del proyecto, con el entorno activado:
-
+Con el entorno activo:
 ```bash
 uvicorn main:app --reload
 ```
 
-La API estará disponible en:
-
-- Documentación interactiva: http://127.0.0.1:8000/docs
-- Documentación alternativa: http://127.0.0.1:8000/redoc
+Documentación:
+- Swagger UI: http://127.0.0.1:8000/docs
+- ReDoc: http://127.0.0.1:8000/redoc
 
 ## Endpoints principales
-
 - `GET /`  
-  Devuelve un mensaje de bienvenida.
+  Salud de la API.
 
-- `GET /posts`  
-  Lista todos los posts.  
+- `GET /posts` (response_model: `PaginatedPost`)  
   Parámetros:
-  - `query` (opcional, string): filtra por título.
+  - `search` (alias de `query`, opcional, min 3): filtro por título (ILIKE)
+  - `per_page` (1-50, por defecto 10)
+  - `page` (>=1, por defecto 1)
+  - `order_by` ("id" | "title")
+  - `direction` ("asc" | "desc")
 
-- `GET /posts/{post_id}`  
-  Devuelve un post por su `id`.
+- `GET /posts/by-tags` (response_model: `List[PostPublic]`)  
+  Parámetros:
+  - `tags`: múltiples valores, ej: `?tags=python&tags=fastapi`
+
+- `GET /posts/{post_id}` (response_model: `PostPublic | PostSummary`)  
+  Parámetros:
+  - `include_content` (bool, por defecto `true`) para alternar entre detalles y resumen.
+
+- `POST /posts` (201, response_model: `PostPublic`)  
+  Crea un post con `title`, `content`, `tags[]` y `author` (si no existe el autor/tags, se crean).
+
+- `PUT /posts/{post_id}` (response_model: `PostPublic`)  
+  Actualiza campos parciales (`title`, `content`).
+
+- `DELETE /posts/{post_id}` (204)  
+  Elimina un post. 204 no retorna contenido.
+
+## Notas
+- Pydantic v2: conversión de ORM con `model_validate(..., from_attributes=True)`.
+- SQLAlchemy 2.x (estilo select/ORM). Asegúrate de definir `DATABASE_URL` correcto para tu entorno.
