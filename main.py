@@ -40,6 +40,23 @@ posts_tags = Table(
 )
 
 
+class AuthorORM(Base):
+    __tablename__ = "authors"
+    id:Mapped[int] = mapped_column(Integer,primary_key=True, autoincrement=True,index=True)
+    name:Mapped[str] = mapped_column(String(100), nullable=False)
+    email:Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    posts:Mapped[List["PostORM"]] = relationship( back_populates="authors")
+    
+class TagORM(Base):
+    __tablename__ = "tags"
+    id:Mapped[int] = mapped_column(Integer,primary_key=True, autoincrement=True,index=True)
+    name:Mapped[str] = mapped_column(String(30), nullable=False, unique=True)    
+    posts:Mapped[List["PostORM"]] = relationship(        
+        secondary=posts_tags,
+        back_populates="tags",
+        lazy="selectin"    
+        )    
+
 class PostORM(Base):
     __tablename__ = "posts"
     __table_args__ =(UniqueConstraint('title', name='uq_post_title'),)
@@ -50,7 +67,7 @@ class PostORM(Base):
     created_at:Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at:Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     author_id:Mapped[Optional[int]] = mapped_column(ForeignKey("authors.id"))
-    author:Mapped[Optional["AuthorORM"]] = relationship("AuthorORM", back_populates="posts")
+    author:Mapped[Optional["AuthorORM"]] = relationship( back_populates="posts")
     tags:Mapped[List["TagORM"]] = relationship(        
         secondary=posts_tags,
         back_populates="posts",
@@ -58,23 +75,10 @@ class PostORM(Base):
         passive_deletes=True
         )
 
-class TagORM(Base):
-    __tablename__ = "tags"
-    id:Mapped[int] = mapped_column(Integer,primary_key=True, autoincrement=True,index=True)
-    name:Mapped[str] = mapped_column(String(30), nullable=False, unique=True)    
-    posts:Mapped[List["PostORM"]] = relationship(        
-        secondary=posts_tags,
-        back_populates="tags",
-        lazy="selectin",        
-        )
 
 
-class AuthorORM(Base):
-    __tablename__ = "authors"
-    id:Mapped[int] = mapped_column(Integer,primary_key=True, autoincrement=True,index=True)
-    name:Mapped[str] = mapped_column(String(100), nullable=False)
-    email:Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
-    posts:Mapped[List[PostORM]] = relationship("PostORM", back_populates="authors")
+
+
     
 
 
