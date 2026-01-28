@@ -126,27 +126,26 @@ def create_post(post: PostCreate,db:Session= Depends(get_db)):
 @router.put("/{post_id}", response_model=PostPublic, response_description="Post actualizado", response_model_exclude_none=True)
 def update_post(post_id: int, data: PostUpdate,db:Session= Depends(get_db)):
     repository = PostRespository(db)
-    postORM = repository.get(post_id=post_id)
-    if not PostORM:
+    post = repository.get(post_id=post_id)
+    if not post:
         raise HTTPException(status_code=404,detail="Post no encontrado")
     updates  = data.model_dump(exclude_unset=True)
-    repository.update(post=postORM,updates=updates)
-    db.add(postORM)
+    repository.update(post=post,updates=updates)    
     db.commit()
-    db.refresh(postORM)
-    return PostORM
+    db.refresh(post)
+    return post
 
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT, response_description="Post eliminado")
 def delete_post(post_id: int,db:Session= Depends(get_db)): 
     repository = PostRespository(db)
-    postORM = repository.get(post_id=post_id)
-    if not PostORM:
+    post = repository.get(post_id=post_id)
+    if not post:
         raise HTTPException(status_code=404,detail="Post no encontrado")
     
-    repository.delete(postORM)
-    db.delete(postORM)
+    repository.delete(post)
+    db.delete(post)
     db.commit()
     
     

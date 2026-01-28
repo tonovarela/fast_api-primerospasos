@@ -104,9 +104,7 @@ class PostRespository:
            
     def update(self, post:PostORM,updates)->PostORM:        
         for key, value in updates.items():
-            setattr(post, key, value)        
-        self.db.add(post)                           
-        self.db.refresh(post)
+            setattr(post, key, value)                
         return post
                           
         

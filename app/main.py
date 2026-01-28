@@ -9,7 +9,7 @@ load_dotenv()
    
 def create_app()->FastAPI:
     app = FastAPI(title="Miniblog")
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)    
     app.include_router(posts_router)
     return app
 

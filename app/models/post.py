@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from .author import AuthorORM
     from .tag import TagORM
 
-post_tags = Table(
-    'post_tags',
+posts_tags = Table(
+    'posts_tags',
     Base.metadata,
     Column('post_id', ForeignKey('posts.id',ondelete="CASCADE") ,primary_key=True),
     Column('tag_id', ForeignKey('tags.id',ondelete="CASCADE"), primary_key=True)
@@ -34,7 +34,7 @@ class PostORM(Base):
     author:Mapped[Optional["AuthorORM"]] = relationship( back_populates="posts")    
     
     tags:Mapped[List["TagORM"]] = relationship(        
-        secondary=post_tags,
+        secondary=posts_tags,
         back_populates="posts",
         lazy="selectin",
         passive_deletes=True
