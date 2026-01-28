@@ -63,7 +63,7 @@ class PostRespository:
         return posts
 
     def ensure_author(self,name:str,email:str)->AuthorORM:
-        author_obj = self.db.execute(select(AuthorORM).where(AuthorORM.email == post.author.email)).scalar_one_or_none()    
+        author_obj = self.db.execute(select(AuthorORM).where(AuthorORM.email == email)).scalar_one_or_none()    
         if author_obj:
             return author_obj
         
@@ -78,9 +78,37 @@ class PostRespository:
             ).scalar_one_or_none()
         if tag_obj:
             return tag_obj
-            
-        tag_obj = TagORM(name=tag.name)
+                    
+        tag_obj = TagORM(name=name)
         self.db.add(tag_obj)
         self.db.flush()  
         return tag_obj # Asegura que tag_obj tenga un ID asignado
-                
+     
+    
+    def create(self,title:str,content:str,author:Optional[dict],tags:List[dict])->PostORM:
+        author_ob= None
+        if author:
+            author_ob = self.ensure_author(author["name"],author["email"])
+        post = PostORM(title=title,content=content,author=author_ob)
+        for tag in tags:
+            tab_obj= self.ensure_tags(tag["name"])
+            post.tags.append(tab_obj)
+            
+        self.db.add(post)  
+        self.db.flush()
+        self.db.refresh(post)        
+        return post    
+    
+    def delete(self,post:PostORM)->None:                
+        self.db.delete(post)            
+           
+    def update(self, post:PostORM,updates)->PostORM:        
+        for key, value in updates.items():
+            setattr(post, key, value)        
+        self.db.add(post)                           
+        self.db.refresh(post)
+        return post
+                          
+        
+        
+        

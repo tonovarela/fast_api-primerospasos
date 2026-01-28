@@ -1,9 +1,5 @@
 from .author import AuthorORM
-from .post import PostORM, posts_tags
-from .tag import TagORM 
+from .tag import TagORM
+from .post import PostORM, post_tags
 
-__all__ = [
-    "AuthorORM",
-    "PostORM",
-    "TagORM",
-    "posts_tags"]
+__all__ = ["AuthorORM", "TagORM", "PostORM", "post_tags"]
