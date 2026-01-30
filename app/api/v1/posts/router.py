@@ -10,8 +10,12 @@ from typing import List, Literal, Optional, Union
 from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,PostCreate, PostUpdate,PostSummary)
 from .repository import PostRespository
+from app.core.security import oauth2_scheme
 
 router = APIRouter(prefix="/posts", tags=["posts"])
+
+
+
 
 
 @router.get("/", response_model=PaginatedPost)
@@ -75,7 +79,9 @@ def list_posts(
     
 @router.get("/by-tags", response_model=List[PostPublic]) 
 def get_posts_by_tags(
-    tags: Optional[str] = Query(default=None,description="Lista de etiquetas separadas por comas",example="python,fastapi,sqlalchemy"),
+    tags: Optional[str] = Query(default=None,description="Lista de etiquetas separadas por comas",
+                                # example="python,fastapi,sqlalchemy"
+                                ),
     db: Session = Depends(get_db)
 ):
     repository = PostRespository(db)
@@ -149,4 +155,8 @@ def delete_post(post_id: int,db:Session= Depends(get_db)):
     db.commit()
     
     
+
+@router.get("/secure")
+def secure_endpoint(token: str = Depends(oauth2_scheme)):
     
+    return {"message": f"Token, {token}. Has accedido a un endpoint seguro."}    
