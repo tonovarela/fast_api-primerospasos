@@ -10,7 +10,8 @@ from typing import List, Literal, Optional, Union
 from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,PostCreate, PostUpdate,PostSummary)
 from .repository import PostRespository
-from app.core.security import oauth2_scheme
+from app.core.security import oauth2_scheme,get_currrent_user
+
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -109,7 +110,7 @@ def get_post(post_id: int = Path(
 
 
 @router.post("/", response_model=PostPublic, response_description="Post creado (OK)",status_code=status.HTTP_201_CREATED)
-def create_post(post: PostCreate,db:Session= Depends(get_db)):
+def create_post(post: PostCreate,db:Session= Depends(get_db),user= Depends(get_currrent_user)):
     repository= PostRespository(db)
     try:
         post =repository.create(title=post.title,

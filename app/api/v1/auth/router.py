@@ -4,8 +4,8 @@ from app.core.security import create_access_token,get_currrent_user
 from datetime import timedelta
 from .schema import UserPublic
 FAKE_USERS ={
-    "ricardo@live.com":{ "username":"ricardo", "full_name":"Ricardo Lopes", "email":"ricardo@live.com","password":"12345"},
-    "alumno@live.com":{ "username":"alumno", "full_name":"Alumno Test", "email":"alumno@live.com","password":"123456"},
+    "ricardo":{ "username":"ricardo", "full_name":"Ricardo Lopes", "email":"ricardo@live.com","password":"12345"},
+    "alumno":{ "username":"alumno", "full_name":"Alumno Test", "email":"alumno@live.com","password":"123456"},
 }
 
 
@@ -18,7 +18,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = FAKE_USERS.get(form_data.username) 
     if not user or user["password"] != form_data.password:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")    
-    token = create_access_token(data={"sub": user["username"],"email": user["email"]},expires_delta=timedelta(minutes=30))
+    token = create_access_token(data={"sub":user,"username": user["username"],"email": user["email"]},expires_delta=timedelta(minutes=30))
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me",response_model=UserPublic)
