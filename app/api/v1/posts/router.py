@@ -111,7 +111,7 @@ def get_post(post_id: int = Path(
 
 @router.post("/", response_model=PostPublic, response_description="Post creado (OK)",status_code=status.HTTP_201_CREATED)
 def create_post(post: PostCreate,db:Session= Depends(get_db),user= Depends(get_currrent_user)):
-    repository= PostRespository(db)
+    repository= PostRespository(db)    
     try:
         post =repository.create(title=post.title,
                                 content=post.content,
@@ -149,13 +149,11 @@ def delete_post(post_id: int,db:Session= Depends(get_db)):
     repository = PostRespository(db)
     post = repository.get(post_id=post_id)
     if not post:
-        raise HTTPException(status_code=404,detail="Post no encontrado")
-    
+        raise HTTPException(status_code=404,detail="Post no encontrado")    
     repository.delete(post)
     db.delete(post)
     db.commit()
-    
-    
+        
 
 @router.get("/secure")
 def secure_endpoint(token: str = Depends(oauth2_scheme)):

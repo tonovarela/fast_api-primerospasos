@@ -1,9 +1,13 @@
-import os
+
 from fastapi import FastAPI 
 from dotenv import load_dotenv
 from app.core.db import Base,engine
 from app.api.v1.posts.router import router as posts_router
 from app.api.v1.auth.router import router as auth_router
+# import logging
+# logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
+# logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
 
 
 load_dotenv()

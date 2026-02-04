@@ -39,10 +39,8 @@ async def get_currrent_user(token:str= Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    print(token)
     try:
-        payload = decode_token(token)
-        print("Payload:", payload)
+        payload = decode_token(token)        
         if payload is None:
             raise credentials_exception
         email: str = payload.get("email")
@@ -62,12 +60,12 @@ async def get_currrent_user(token:str= Depends(oauth2_scheme)):
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except Exception as e:
-        print(e)
+    except Exception as e:        
+        print("Unexpected error:", str(e))
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials ******",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error en el servidor",
+            headers={"WWW-Authenticate": "Bearer"}
         )       
         
         

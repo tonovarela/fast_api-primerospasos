@@ -9,11 +9,12 @@ print(f"Conectando a la base de datos en: {DATABASE_URL}")
 
 engine_kwargs = {}
 if DATABASE_URL.startswith("sqlite"):
+    print("Usando SQLite, aplicando configuración específica.")
     engine_kwargs["connect_args"] = {"check_same_thread": False}
     
     
 print(DATABASE_URL)   
-engine = create_engine(DATABASE_URL, echo=True,future=True, **engine_kwargs) 
+engine = create_engine(DATABASE_URL, echo=False,future=True, **engine_kwargs) 
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
 
