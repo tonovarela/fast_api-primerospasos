@@ -48,7 +48,8 @@ def list_posts(
     direction: Literal["asc", "desc"] = Query(
         "asc", description="Dirección de orden"
     ),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user= Depends(get_currrent_user)
   ):
     repository = PostRespository(db)
     total ,items = repository.search(
@@ -83,7 +84,8 @@ def get_posts_by_tags(
     tags: Optional[str] = Query(default=None,description="Lista de etiquetas separadas por comas",
                                 # example="python,fastapi,sqlalchemy"
                                 ),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user= Depends(get_currrent_user)
 ):
     repository = PostRespository(db)
     tag_list = [tag.strip() for tag in tags.split(",")] if tags else []
@@ -99,7 +101,8 @@ def get_post(post_id: int = Path(
     description="Identificador entero del post. Debe ser mayor a 1",
    # example=1
 ), include_content: bool = Query(default=True, description="Incluir o no el contenido"),
-   db: Session = Depends(get_db)
+   db: Session = Depends(get_db),
+   user= Depends(get_currrent_user)
              ):    
     repository = PostRespository(db)
     post = repository.get(post_id)
@@ -131,7 +134,7 @@ def create_post(post: PostCreate,db:Session= Depends(get_db),user= Depends(get_c
 
 
 @router.put("/{post_id}", response_model=PostPublic, response_description="Post actualizado", response_model_exclude_none=True)
-def update_post(post_id: int, data: PostUpdate,db:Session= Depends(get_db)):
+def update_post(post_id: int, data: PostUpdate,db:Session= Depends(get_db),user= Depends(get_currrent_user)):
     repository = PostRespository(db)
     post = repository.get(post_id=post_id)
     if not post:
@@ -145,7 +148,7 @@ def update_post(post_id: int, data: PostUpdate,db:Session= Depends(get_db)):
 
 
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT, response_description="Post eliminado")
-def delete_post(post_id: int,db:Session= Depends(get_db)): 
+def delete_post(post_id: int,db:Session= Depends(get_db),user= Depends(get_currrent_user)): 
     repository = PostRespository(db)
     post = repository.get(post_id=post_id)
     if not post:
@@ -156,6 +159,6 @@ def delete_post(post_id: int,db:Session= Depends(get_db)):
         
 
 @router.get("/secure")
-def secure_endpoint(token: str = Depends(oauth2_scheme)):
+def secure_endpoint(token: str = Depends(oauth2_scheme),user= Depends(get_currrent_user)):
     
     return {"message": f"Token, {token}. Has accedido a un endpoint seguro."}    
