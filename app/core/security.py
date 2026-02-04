@@ -39,14 +39,15 @@ async def get_currrent_user(token:str= Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    print(token)
     try:
         payload = decode_token(token)
         print("Payload:", payload)
         if payload is None:
             raise credentials_exception
         email: str = payload.get("email")
-        username: str = payload.get("sub")
-        if sub is None or username is None:            
+        username: str = payload.get("username")
+        if username is None:            
             raise credentials_exception
         return {"email": email, "username": username}
     except ExpiredSignatureError:
@@ -60,7 +61,14 @@ async def get_currrent_user(token:str= Depends(oauth2_scheme)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
-        )    
+        )
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials ******",
+            headers={"WWW-Authenticate": "Bearer"},
+        )       
         
         
 
