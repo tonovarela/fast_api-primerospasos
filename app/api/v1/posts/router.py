@@ -115,17 +115,19 @@ def get_post(post_id: int = Path(
 @router.post("/", response_model=PostPublic, response_description="Post creado (OK)",status_code=status.HTTP_201_CREATED)
 def create_post(post: PostCreate,db:Session= Depends(get_db),user= Depends(get_currrent_user)):
     repository= PostRespository(db)    
+    
     try:
         post =repository.create(title=post.title,
                                 content=post.content,
                                 tags=[tag.model_dump() for tag in post.tags],
-                                author=(post.author.model_dump() if post.author else None)
+                                author={"name": user["full_name"], "email": user["email"]}
                                 )        
         db.commit()
         db.refresh(post)
         return post
-    except IntegrityError : 
+    except IntegrityError as e: 
         db.rollback()
+        print(f"Error de integridad al crear el post: {e}")
         raise HTTPException(status_code=400, detail="Error de integridad al crear el post") 
     except SQLAlchemyError :
         db.rollback()

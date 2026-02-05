@@ -47,7 +47,7 @@ async def get_currrent_user(token:str= Depends(oauth2_scheme)):
         username: str = payload.get("username")
         if username is None:            
             raise credentials_exception
-        return {"email": email, "username": username}
+        return {"email": email, "username": username, "full_name": payload.get("full_name")}
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
