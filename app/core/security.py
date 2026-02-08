@@ -15,6 +15,34 @@ ACCESS_TOKEN_EXPIRE_MINUTES =int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES","30"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login") 
 
+credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+error_500_exception = HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Internal server error",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def raise_expired_token():
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token has expired",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+def raise_forbidden():
+    return HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You do not have permission to access this resource",
+        headers={"WWW-Authenticate": "Bearer"},
+    )   
+    
+     
 
 def create_access_token(data:dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -34,11 +62,7 @@ def decode_token(token:str):
         return None
 
 async def get_currrent_user(token:str= Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    
     try:
         payload = decode_token(token)        
         if payload is None:
@@ -49,24 +73,12 @@ async def get_currrent_user(token:str= Depends(oauth2_scheme)):
             raise credentials_exception
         return {"email": email, "username": username, "full_name": payload.get("full_name")}
     except ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise raise_expired_token()
     except InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise credentials_exception
     except Exception as e:        
         print("Unexpected error:", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error en el servidor",
-            headers={"WWW-Authenticate": "Bearer"}
-        )       
+        raise error_500_exception  
         
         
 

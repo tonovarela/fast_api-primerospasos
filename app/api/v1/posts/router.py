@@ -11,12 +11,22 @@ from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,PostCreate, PostUpdate,PostSummary)
 from .repository import PostRespository
 from app.core.security import oauth2_scheme,get_currrent_user
-
+import time
+import asyncio 
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 
+# @router.get("/sync")
+# def sync_endpoint():
+#     time.sleep(8)
+#     return {"message":"Funcion sincrona termino"}
+    
+# @router.get("/async")
+# async def async_endpoint():
+#     await asyncio.sleep(8)
+#     return {"message":"Funcion asincrona termino"}    
 
 
 @router.get("/", response_model=PaginatedPost)
@@ -162,5 +172,4 @@ def delete_post(post_id: int,db:Session= Depends(get_db),user= Depends(get_currr
 
 @router.get("/secure")
 def secure_endpoint(token: str = Depends(oauth2_scheme),user= Depends(get_currrent_user)):
-    
     return {"message": f"Token, {token}. Has accedido a un endpoint seguro."}    

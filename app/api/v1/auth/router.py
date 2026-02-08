@@ -23,7 +23,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me",response_model=UserPublic)
-def read_me(current_user: UserPublic = Depends(get_currrent_user)):
+async def read_me(current_user: UserPublic = Depends(get_currrent_user)):
     return {"email": current_user["email"], "username": current_user["username"]}
 
     
