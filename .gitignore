@@ -4,6 +4,8 @@ venv/
 *.db
 .env
 
+app/media/
+
 __pycache__/
 *.py[cod]
 *$py.class
