@@ -85,11 +85,11 @@ class PostRespository:
         return tag_obj # Asegura que tag_obj tenga un ID asignado
      
     
-    def create(self,title:str,content:str,author:Optional[dict],tags:List[dict])->PostORM:
+    def create(self,title:str,content:str,author:Optional[dict],tags:List[dict],image_url:str)->PostORM:
         author_ob= None
         if author:
             author_ob = self.ensure_author(author["name"],author["email"])
-        post = PostORM(title=title,content=content,author=author_ob)
+        post = PostORM(title=title,content=content,author=author_ob,image_url=image_url)
         for tag in tags:
             tab_obj= self.ensure_tags(tag["name"])
             post.tags.append(tab_obj)

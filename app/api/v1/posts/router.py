@@ -4,13 +4,14 @@ from sqlalchemy.orm import Session
 
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query,status
-from typing import List, Literal, Optional, Union
+from fastapi import APIRouter, Depends, HTTPException, Path, Query,status,UploadFile,File
+from typing import List, Literal, Optional, Union,Annotated
 
 from app.core.db import get_db
 from .schemas import (PostPublic, PaginatedPost,PostCreate, PostUpdate,PostSummary)
 from .repository import PostRespository
 from app.core.security import oauth2_scheme,get_currrent_user
+from app.services.file_service import save_upload_file
 import time
 import asyncio 
 
@@ -123,14 +124,21 @@ def get_post(post_id: int = Path(
 
 
 @router.post("/", response_model=PostPublic, response_description="Post creado (OK)",status_code=status.HTTP_201_CREATED)
-def create_post(post: PostCreate,db:Session= Depends(get_db),user= Depends(get_currrent_user)):
+async def create_post(post: Annotated[PostCreate,Depends(PostCreate.as_form)],
+                image_post:Optional[UploadFile]=File(None),
+                db:Session= Depends(get_db),
+                user= Depends(get_currrent_user)):
     repository= PostRespository(db)    
-    
+    saved = None        
     try:
-        post =repository.create(title=post.title,
+        if image_post is not None:
+           saved = await save_upload_file(image_post)
+        image_url = saved["url"] if saved else None                                                
+        post =repository.create(title=post.title,                                
                                 content=post.content,
                                 tags=[tag.model_dump() for tag in post.tags],
-                                author={"name": user["full_name"], "email": user["email"]}
+                                author={"name": user["full_name"], "email": user["email"]},
+                                image_url=image_url
                                 )        
         db.commit()
         db.refresh(post)
@@ -139,7 +147,8 @@ def create_post(post: PostCreate,db:Session= Depends(get_db),user= Depends(get_c
         db.rollback()
         print(f"Error de integridad al crear el post: {e}")
         raise HTTPException(status_code=400, detail="Error de integridad al crear el post") 
-    except SQLAlchemyError :
+    except SQLAlchemyError  as error :
+        print(f"Error de base de datos al crear el post: {error}")
         db.rollback()
         raise HTTPException(status_code=500, detail="Error interno del servidor al crear el post")
         
