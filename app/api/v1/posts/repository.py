@@ -1,3 +1,4 @@
+from locale import normalize
 from math import ceil
 from typing import Optional
 from sqlalchemy import func, select
@@ -8,6 +9,7 @@ from app.models import PostORM, AuthorORM, TagORM
 
 
 class PostRespository:
+    
     def __init__(self, db: Session):
         self.db = db
 
@@ -73,13 +75,16 @@ class PostRespository:
         return author_obj
     
     def ensure_tags(self,name:str)->TagORM:
-        tag_obj = self.db.execute(
-                select(TagORM).where(func.lower(TagORM.name) == name.lower())
+        normalized_name = name.strip().lower()
+        if not normalized_name:
+            return
+        tag_obj = self.db.execute(            
+                select(TagORM).where(func.lower(TagORM.name) == normalized_name.lower())
             ).scalar_one_or_none()
         if tag_obj:
             return tag_obj
                     
-        tag_obj = TagORM(name=name)
+        tag_obj = TagORM(name=normalized_name)
         self.db.add(tag_obj)
         self.db.flush()  
         return tag_obj # Asegura que tag_obj tenga un ID asignado
@@ -90,9 +95,17 @@ class PostRespository:
         if author:
             author_ob = self.ensure_author(author["name"],author["email"])
         post = PostORM(title=title,content=content,author=author_ob,image_url=image_url)
-        for tag in tags:
-            tab_obj= self.ensure_tags(tag["name"])
-            post.tags.append(tab_obj)
+        
+        
+        
+        names = tags[0]["name"].split(",")
+        for name in names:
+                n = name.strip().lower()                
+                if not n:
+                    continue
+                  
+                tab_obj= self.ensure_tags(n)
+                post.tags.append(tab_obj)
             
         self.db.add(post)  
         self.db.flush()

@@ -4,20 +4,16 @@ from sqlalchemy.orm import Session
 
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query,status,UploadFile,File
+from fastapi import   APIRouter, Depends, HTTPException, Path, Query,status,UploadFile,File
 from typing import List, Literal, Optional, Union,Annotated
-
 from app.core.db import get_db
+
 from .schemas import (PostPublic, PaginatedPost,PostCreate, PostUpdate,PostSummary)
 from .repository import PostRespository
 from app.core.security import oauth2_scheme,get_currrent_user
 from app.services.file_service import save_upload_file
-import time
-import asyncio 
 
 router = APIRouter(prefix="/posts", tags=["posts"])
-
-
 
 # @router.get("/sync")
 # def sync_endpoint():
@@ -27,9 +23,8 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 # @router.get("/async")
 # async def async_endpoint():
 #     await asyncio.sleep(8)
+
 #     return {"message":"Funcion asincrona termino"}    
-
-
 @router.get("/", response_model=PaginatedPost)
 def list_posts(
     text: Optional[str] = Query(
