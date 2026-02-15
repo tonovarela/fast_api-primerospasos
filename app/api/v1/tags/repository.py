@@ -1,35 +1,40 @@
 from typing import Optional
 
 from fastapi import Query
+from app.api.v1.tags.schemas import TagPublic
 from app.models.tag import TagORM
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
+from app.services.pagination_service import paginate_query
 
 
 class TagRepository:    
     def __init__(self,db:Session):
         self.db = db
     
-    def list(self, search: Optional[str], order_by: str ="id", direction: str ="asc", page: int =1, per_page: int=10)-> tuple[int, list[TagORM]]:
+    def list(self, search: Optional[str], order_by: str ="id", direction: str ="asc", page: int =1, per_page: int=10)-> tuple[int, list[TagORM]]:        
         query = select(TagORM)
+
+        allowed_order ={
+            "id": TagORM.id,
+            "name": func.lower(TagORM.name),            
+        }
+
+        results =paginate_query(
+            db=self.db,
+            model=TagORM,
+            base_query=query,
+            page=page,
+            per_page=per_page,
+            order_by=order_by,
+            direction=direction,
+            allow_order=allowed_order
+        )        
+        print(results)
+        results["items"] = [TagPublic.model_validate(item) for item in results["items"]]
         
-        if search:
-            query = query.where(func.lower(TagORM.name).like(f"%{search.strip().lower()}%"))
-        
-        total = self.db.scalar(select(func.count()).select_from(query.subquery())) or 0
-        if total == 0:
-            return 0, []
-        
-        total_pages = (total + per_page -1) // per_page
-        current_page = min(page, max(1, total_pages))
-        
-        order_col = TagORM.id if order_by == "id" else func.lower(TagORM.name)
-        query = query.order_by(order_col.desc() if direction == "desc" else order_col.asc())
-        
-        start = (current_page -1) * per_page
-        items = self.db.execute(query.limit(per_page).offset(start)).scalars().all()
-        
-        return total, items
+
+        return results["total"], results["items"]
         
     
     def create(self,name:str):

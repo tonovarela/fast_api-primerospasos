@@ -35,12 +35,12 @@ def paginate_query(
                 "per_page":per_page,
                 "items":[]
                 }        
+    
     if allow_order and order_by:
         col = allow_order.get(order_by,allow_order.get("id"))        
-        query = query.order_by(col.desc() if direction == "desc" else col.asc())
-    
-    
+        query = query.order_by(col.desc() if direction == "desc" else col.asc())        
     start = (page -1) * per_page
+    
     items = db.execute(query.limit(per_page).offset(start)).scalars().all()
     return {
         "total": total,
