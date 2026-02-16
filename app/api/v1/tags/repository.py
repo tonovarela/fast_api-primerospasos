@@ -15,6 +15,9 @@ class TagRepository:
     def list(self, search: Optional[str], order_by: str ="id", direction: str ="asc", page: int =1, per_page: int=10)-> tuple[int, list[TagORM]]:        
         query = select(TagORM)
 
+        if search:
+            query = query.where(func.lower(TagORM.name).like(f"%{search.lower()}%"))
+
         allowed_order ={
             "id": TagORM.id,
             "name": func.lower(TagORM.name),            
@@ -30,10 +33,9 @@ class TagRepository:
             direction=direction,
             allow_order=allowed_order
         )        
-        print(results)
-        results["items"] = [TagPublic.model_validate(item) for item in results["items"]]
-        
 
+        
+        results["items"] = [TagPublic.model_validate(item) for item in results["items"]]
         return results["total"], results["items"]
         
     
@@ -44,12 +46,19 @@ class TagRepository:
         tag_obj = self.db.execute(            
                 select(TagORM).where(func.lower(TagORM.name) == normalized_name.lower())
             ).scalar_one_or_none()
+        
+
         if tag_obj:
             return tag_obj
                     
         tag_obj = TagORM(name=normalized_name)
+        
         self.db.add(tag_obj)
-        self.db.flush()  
+
+        self.db.flush()
+        self.db.commit()
+        self.db.refresh(tag_obj)
+         
         return tag_obj 
     
         
