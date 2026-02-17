@@ -12,7 +12,7 @@ class TagRepository:
     def __init__(self,db:Session):
         self.db = db
     
-    def list(self, search: Optional[str], order_by: str ="id", direction: str ="asc", page: int =1, per_page: int=10)-> tuple[int, list[TagORM]]:        
+    def list(self, search: Optional[str], order_by: str ="id", direction: str ="asc", page: int =1, per_page: int=10):        
         query = select(TagORM)
 
         if search:
@@ -36,7 +36,9 @@ class TagRepository:
 
         
         results["items"] = [TagPublic.model_validate(item) for item in results["items"]]
-        return results["total"], results["items"]
+        print(results)
+        return results
+
         
     
     def create(self,name:str):
@@ -61,7 +63,29 @@ class TagRepository:
          
         return tag_obj 
     
-        
-        
-        
+
+
+    def delete(self,tag_id: int):
+        tag_obj = self.db.execute(
+            select(TagORM).where(TagORM.id == tag_id)
+        ).scalar_one_or_none()
+
+        if not tag_obj:
+            return None
+
+        self.db.delete(tag_obj)
+        self.db.commit()
+        return tag_obj
     
+    def update(self, tag_id: int, name: str):
+        tag_obj = self.db.execute(
+            select(TagORM).where(TagORM.id == tag_id)
+        ).scalar_one_or_none()
+
+        if not tag_obj:
+            return None
+
+        tag_obj.name = name
+        self.db.commit()
+        self.db.refresh(tag_obj)
+        return tag_obj
