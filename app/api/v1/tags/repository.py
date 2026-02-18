@@ -2,6 +2,7 @@ from typing import Optional
 
 from fastapi import Query
 from app.api.v1.tags.schemas import TagPublic
+from app.models.post import PostORM,posts_tags
 from app.models.tag import TagORM
 from sqlalchemy.orm import Session
 from sqlalchemy import func, select
@@ -66,26 +67,48 @@ class TagRepository:
 
 
     def delete(self,tag_id: int):
-        tag_obj = self.db.execute(
-            select(TagORM).where(TagORM.id == tag_id)
-        ).scalar_one_or_none()
-
+        tag_obj = self.get(tag_id)
         if not tag_obj:
             return None
-
         self.db.delete(tag_obj)
+        self.db.flush()
         self.db.commit()
+    
         return tag_obj
     
     def update(self, tag_id: int, name: str):
-        tag_obj = self.db.execute(
-            select(TagORM).where(TagORM.id == tag_id)
-        ).scalar_one_or_none()
+        tag_obj = self.get(tag_id)
 
         if not tag_obj:
             return None
-
-        tag_obj.name = name
-        self.db.commit()
+        if name is not None:
+            tag_obj.name = name.strip().lower()
+        self.db.add(tag_obj)
+        self.db.flush()
         self.db.refresh(tag_obj)
+        self.db.commit()
         return tag_obj
+    
+    def get(self,tag_id:int)->Optional[TagORM]:
+        tag_find =select(TagORM).where(TagORM.id == tag_id)
+        return self.db.execute(tag_find).scalar_one_or_none() 
+    
+    def most_popular(self)->Optional[dict]:
+        row =(
+            self.db.execute(
+                select(
+                    TagORM.id.label("id"),
+                    TagORM.name.label("name"),
+                    func.count(PostORM.id).label("uses")
+                )
+                .join(posts_tags,posts_tags.c.tag_id == TagORM.id)
+                .join(PostORM,   PostORM.id == posts_tags.c.post_id)
+                .group_by(TagORM.id,TagORM.name)
+                .order_by(func.count(PostORM.id).desc(),func.lower(TagORM.name).asc())
+                .limit(1)
+            )
+            .mappings()
+            .first()
+        )
+        
+        return  dict(row) if row else None

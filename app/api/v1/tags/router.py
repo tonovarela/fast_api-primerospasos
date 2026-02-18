@@ -5,25 +5,21 @@ from sqlalchemy.orm  import Session
 from sqlalchemy.exc import  SQLAlchemyError
 
 from app.api.v1.tags.repository import TagRepository
-from app.api.v1.tags.schemas import TagCreate, TagPublic
+from app.api.v1.tags.schemas import TagCreate, TagPublic, TagUpdate
 from app.core.db import get_db
 from app.core.security import get_currrent_user
 
 
 router = APIRouter(prefix="/tags",tags=["tags"])
 
-
-
-
-
-
-@router.get("",response_description="List of tags")
+@router.get("",response_model=dict,response_description="List of tags")
 def list_tags(page: int = Query(1, ge=1), 
               per_page:int =Query(10, ge=1, le=100),
               order_by: str = Query("id", pattern="^(id|name)$"), 
               direction: str = Query("asc", pattern="^(asc|desc)$"),
               search: Optional[str] = Query(None, max_length=50),
-              db: Session = Depends(get_db)):
+              db: Session = Depends(get_db),
+              user = Depends(get_currrent_user)):
     repository = TagRepository(db)
     tags = []
     try:
@@ -39,7 +35,7 @@ def list_tags(page: int = Query(1, ge=1),
 
 
 @router.post("",response_model=TagPublic,response_description="Tag created successfully", status_code=status.HTTP_201_CREATED)
-def create_tag(tag:TagCreate, db:Session = Depends(get_db)):
+def create_tag(tag:TagCreate, db:Session = Depends(get_db), user = Depends(get_currrent_user)):
     respository = TagRepository(db)
     try:
         tag_obj = respository.create(name=tag.name)
@@ -55,7 +51,7 @@ def create_tag(tag:TagCreate, db:Session = Depends(get_db)):
         
     
 @router.delete("/{tag_id}",response_model=TagPublic,response_description="Tag deleted successfully")
-def delete_tag(tag_id: int, db: Session = Depends(get_db)):
+def delete_tag(tag_id: int, db: Session = Depends(get_db), user = Depends(get_currrent_user)):
     repository = TagRepository(db)
     try:
         tag_obj = repository.delete(tag_id=tag_id)
@@ -66,10 +62,10 @@ def delete_tag(tag_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-    return tag_obj
+    return TagPublic.model_validate(tag_obj)
 
 @router.put("/{tag_id}",response_model=TagPublic,response_description="Tag updated successfully")
-def update_tag(tag_id: int, tag: TagCreate, db: Session = Depends(get_db)):
+def update_tag(tag_id: int, tag: TagUpdate, db: Session = Depends(get_db),user = Depends(get_currrent_user)):
     repository = TagRepository(db)
     try:
         tag_obj = repository.update(tag_id=tag_id, name=tag.name)
@@ -80,4 +76,21 @@ def update_tag(tag_id: int, tag: TagCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+    return TagPublic.model_validate(tag_obj)
+
+
+@router.get("/most-popular",response_model=Optional[dict],response_description="Most popular tag")
+def most_popular_tag(db: Session = Depends(get_db),user = Depends(get_currrent_user)):
+    repository = TagRepository(db)
+    try:
+        tag_obj = repository.most_popular()
+        if not tag_obj:
+            print("Aqui estoy")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No hay tags populares")
+
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+    
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     return tag_obj
